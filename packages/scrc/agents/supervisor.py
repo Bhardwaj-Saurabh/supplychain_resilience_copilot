@@ -3,7 +3,9 @@
 Synthesises the four agent outputs into a typed ``SupervisorDecision``. The tier
 and autonomy come from the deterministic governance policy (ADR-0001); the
 Supervisor proposes ranked actions and stamps provenance, but never lets an LLM
-choose the tier. The SHAP-to-brief narration (LLM) is added in Module 4.
+choose the tier. For escalated decisions it builds a ``ReviewRequest`` whose
+brief is LLM-narrated when a ``BriefWriter`` is wired, or a deterministic SHAP
+template otherwise (the "LLM down" path, architecture.md §17/§19).
 """
 
 from __future__ import annotations
@@ -20,11 +22,13 @@ from scrc.contracts import (
     MacroSignals,
     QuantileForecastResult,
     RegimeLabel,
+    ReviewRequest,
     StockoutRiskResult,
     SupervisorDecision,
 )
 from scrc.governance import EscalationSignals, evaluate_escalation
 from scrc.governance.escalation import HIGH_UNCERTAINTY_RATIO, REVIEW_MIN_PROB
+from scrc.llm import BriefWriter, compose_brief_facts
 
 
 @dataclass(frozen=True)
@@ -45,8 +49,33 @@ def _uncertainty_ratio(forecast: QuantileForecastResult) -> float:
 
 
 class SupervisorAgent:
-    def __init__(self, provenance: ProvenanceContext) -> None:
+    def __init__(
+        self, provenance: ProvenanceContext, brief_writer: BriefWriter | None = None
+    ) -> None:
         self._provenance = provenance
+        self._brief_writer = brief_writer
+
+    def build_review_request(
+        self, decision: SupervisorDecision, stockout: StockoutRiskResult
+    ) -> ReviewRequest:
+        """Compose the HITL brief for an escalated decision (PRD §6.2).
+
+        Uses the LLM to narrate the factual block when wired; otherwise returns
+        the deterministic SHAP facts verbatim — the planner always gets the
+        numbers, even with the LLM down.
+        """
+        brief = (
+            self._brief_writer.write(decision, stockout)
+            if self._brief_writer is not None
+            else compose_brief_facts(decision, stockout)
+        )
+        return ReviewRequest(
+            decision_id=decision.decision_id,
+            tier=decision.tier,
+            brief=brief,
+            recommended_actions=decision.recommended_actions,
+            counterfactual=None,
+        )
 
     def synthesise(
         self,

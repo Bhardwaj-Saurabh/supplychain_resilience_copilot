@@ -91,3 +91,18 @@ forbidden_modules =
     scrc.orchestration
     scrc.observability
     scrc.api
+
+[importlinter:contract:llm-is-contracts-only]
+name = LLM capability depends on contracts only (narration, not orchestration)
+type = forbidden
+source_modules =
+    scrc.llm
+forbidden_modules =
+    scrc.ml
+    scrc.data
+    scrc.tools
+    scrc.agents
+    scrc.orchestration
+    scrc.governance
+    scrc.observability
+    scrc.api

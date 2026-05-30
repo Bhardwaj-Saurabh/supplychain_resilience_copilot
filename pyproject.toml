@@ -35,6 +35,12 @@ ml = [
 orchestration = [
     "langgraph>=0.2",
     "langchain-core>=0.3",
+    "langgraph-checkpoint-postgres>=2.0",
+]
+# LLM backbone: Azure OpenAI via Azure AI Foundry (ADR-0008).
+llm = [
+    "langchain-openai>=0.2",
+    "langchain-core>=0.3",
 ]
 # Heavy orchestration/feature-store runtimes — declared for the Compose images,
 # not installed for local unit testing (Airflow/Feast pull large dep trees).
@@ -112,7 +118,15 @@ warn_return_any = false
 
 # Third-party ML/serving libs without bundled type stubs.
 [[tool.mypy.overrides]]
-module = ["sklearn.*", "xgboost.*", "shap.*", "mlflow.*", "langgraph.*", "langchain_core.*"]
+module = [
+    "sklearn.*",
+    "xgboost.*",
+    "shap.*",
+    "mlflow.*",
+    "langgraph.*",
+    "langchain_core.*",
+    "langchain_openai.*",
+]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
