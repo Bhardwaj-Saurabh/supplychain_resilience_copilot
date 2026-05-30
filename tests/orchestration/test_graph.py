@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any
+
+from langgraph.types import Command
 
 from scrc.agents import (
     DemandAgent,
@@ -94,42 +97,60 @@ def _bundle(prob: float, anomaly: bool, regime: RegimeLabel, width: float = 6.0)
     )
 
 
-def _run(bundle: AgentBundle, request: DecisionRequest) -> dict[str, object]:
+def _invoke(bundle: AgentBundle, request: DecisionRequest, thread: str) -> tuple[Any, dict, dict]:
     app = build_graph(bundle)
-    return app.invoke({"request": request, "errors": []})
+    config = {"configurable": {"thread_id": thread}}
+    result = app.invoke({"request": request, "errors": []}, config)
+    return app, config, result
 
 
-def test_graph_routine_path() -> None:
-    request = DecisionRequest(sku_id="A", store_id="CA_1", port_ids=["USLAX"])
-    state = _run(_bundle(0.1, anomaly=False, regime=RegimeLabel.NEUTRAL), request)
-    decision = state["decision"]
-    assert decision.tier is EscalationTier.ROUTINE  # type: ignore[attr-defined]
-    assert decision.autonomous is True  # type: ignore[attr-defined]
+def _request(ports: bool = True) -> DecisionRequest:
+    return DecisionRequest(sku_id="A", store_id="CA_1", port_ids=["USLAX"] if ports else [])
 
 
-def test_graph_critical_path_multi_signal() -> None:
-    request = DecisionRequest(sku_id="A", store_id="CA_1", port_ids=["USLAX"])
-    state = _run(_bundle(0.9, anomaly=True, regime=RegimeLabel.SHOCK), request)
-    decision = state["decision"]
-    assert decision.tier is EscalationTier.CRITICAL  # type: ignore[attr-defined]
-    assert decision.autonomous is False  # type: ignore[attr-defined]
-    assert decision.recommended_actions  # type: ignore[attr-defined]
+def test_routine_decision_is_autonomous_and_completes() -> None:
+    _, _, result = _invoke(_bundle(0.1, anomaly=False, regime=RegimeLabel.NEUTRAL), _request(), "r")
+    assert "__interrupt__" not in result
+    assert result["decision"].tier is EscalationTier.ROUTINE
+    assert result["decision"].autonomous is True
 
 
-def test_graph_escalates_to_critical_on_missing_signal() -> None:
-    # No port_ids -> the logistics agent raises -> node degrades to anomaly=None
-    # -> Supervisor escalates to CRITICAL rather than acting on a partial picture.
-    request = DecisionRequest(sku_id="A", store_id="CA_1")
-    state = _run(_bundle(0.1, anomaly=False, regime=RegimeLabel.NEUTRAL), request)
-    decision = state["decision"]
-    assert decision.tier is EscalationTier.CRITICAL  # type: ignore[attr-defined]
-    assert decision.autonomous is False  # type: ignore[attr-defined]
-    assert any("logistics" in e for e in state.get("errors", []))  # type: ignore[union-attr]
+def test_escalated_decision_interrupts_for_hitl() -> None:
+    _, _, result = _invoke(_bundle(0.9, anomaly=True, regime=RegimeLabel.SHOCK), _request(), "c")
+    assert "__interrupt__" in result  # graph paused for a human
+    assert result["decision"].tier is EscalationTier.CRITICAL
+    payload = result["__interrupt__"][0].value
+    assert payload["tier"] == "critical"
+    assert payload["brief"]  # the planner receives a full brief, not a bare prompt
 
 
-def test_graph_decision_is_reproducible() -> None:
-    request = DecisionRequest(sku_id="A", store_id="CA_1", port_ids=["USLAX"])
-    first = _run(_bundle(0.62, anomaly=False, regime=RegimeLabel.NEUTRAL), request)["decision"]
-    second = _run(_bundle(0.62, anomaly=False, regime=RegimeLabel.NEUTRAL), request)["decision"]
-    assert first.decision_id == second.decision_id  # type: ignore[attr-defined]
-    assert first.tier is second.tier  # type: ignore[attr-defined]
+def test_resume_records_human_outcome() -> None:
+    app, config, result = _invoke(
+        _bundle(0.62, anomaly=False, regime=RegimeLabel.NEUTRAL), _request(), "resume"
+    )
+    assert "__interrupt__" in result
+    final = app.invoke(Command(resume={"approved": True, "reviewer_id": "planner1"}), config)
+    assert "__interrupt__" not in final
+    assert final["human_outcome"]["approved"] is True
+    assert final["human_outcome"]["reviewer_id"] == "planner1"
+    assert final["decision"].tier is EscalationTier.REVIEW
+
+
+def test_missing_signal_escalates_to_critical_and_interrupts() -> None:
+    # No port_ids -> logistics agent raises -> anomaly None -> Supervisor escalates.
+    _, _, result = _invoke(
+        _bundle(0.1, anomaly=False, regime=RegimeLabel.NEUTRAL), _request(ports=False), "m"
+    )
+    assert result["decision"].tier is EscalationTier.CRITICAL
+    assert result["decision"].autonomous is False
+    assert any("logistics" in e for e in result.get("errors", []))
+    assert "__interrupt__" in result
+
+
+def test_decision_is_reproducible_across_threads() -> None:
+    _, _, first = _invoke(_bundle(0.62, anomaly=False, regime=RegimeLabel.NEUTRAL), _request(), "a")
+    _, _, second = _invoke(
+        _bundle(0.62, anomaly=False, regime=RegimeLabel.NEUTRAL), _request(), "b"
+    )
+    assert first["decision"].decision_id == second["decision"].decision_id
+    assert first["decision"].tier is second["decision"].tier

@@ -64,6 +64,6 @@ deploy/            docker-compose.yml + Azure manifests
 | 2 | Data layer (`scrc.data`), Feast definitions + Airflow DAGs (Module 1) | ✅ |
 | 3 | ML serving (`scrc.ml`) + ML-as-Tool boundary (`scrc.tools`) (Module 2) | ✅ |
 | 4 | Governance tiering, 5 agents, LangGraph graph (Module 3) | ✅ |
-| 5 | Uncertainty + SHAP-to-brief + `interrupt()` HITL (Module 4) | ⬜ |
-| 6 | Observability + governance (Module 5) | ⬜ |
+| 5 | SHAP-to-brief (LLM) + `interrupt()` HITL gate (Module 4) | ✅ |
+| 6 | Observability (Opik/OTEL) + MLflow audit + rollback (Module 5) | ⬜ |
 | 7 | Microsoft Agent Framework port (Module 6) | ⬜ |

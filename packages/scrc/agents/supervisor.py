@@ -56,19 +56,25 @@ class SupervisorAgent:
         self._brief_writer = brief_writer
 
     def build_review_request(
-        self, decision: SupervisorDecision, stockout: StockoutRiskResult
+        self, decision: SupervisorDecision, stockout: StockoutRiskResult | None
     ) -> ReviewRequest:
         """Compose the HITL brief for an escalated decision (PRD §6.2).
 
-        Uses the LLM to narrate the factual block when wired; otherwise returns
-        the deterministic SHAP facts verbatim — the planner always gets the
-        numbers, even with the LLM down.
+        With a model output: LLM-narrated when a BriefWriter is wired, else the
+        deterministic SHAP facts verbatim. Without one (missing/timed-out
+        signal): a plain note — the planner is told the picture is incomplete
+        rather than shown a fabricated brief.
         """
-        brief = (
-            self._brief_writer.write(decision, stockout)
-            if self._brief_writer is not None
-            else compose_brief_facts(decision, stockout)
-        )
+        if stockout is None:
+            brief = (
+                f"{decision.tier.value.upper()}: a required upstream signal was "
+                "missing or timed out; no model output is available. Manual "
+                "assessment required before any action."
+            )
+        elif self._brief_writer is not None:
+            brief = self._brief_writer.write(decision, stockout)
+        else:
+            brief = compose_brief_facts(decision, stockout)
         return ReviewRequest(
             decision_id=decision.decision_id,
             tier=decision.tier,

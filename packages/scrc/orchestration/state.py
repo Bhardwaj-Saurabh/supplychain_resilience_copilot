@@ -15,6 +15,7 @@ from scrc.contracts import (
     DecisionRequest,
     MacroSignals,
     QuantileForecastResult,
+    ReviewRequest,
     StockoutRiskResult,
     SupervisorDecision,
 )
@@ -27,4 +28,6 @@ class GraphState(TypedDict, total=False):
     macro: MacroSignals | None
     stockout: StockoutRiskResult | None
     decision: SupervisorDecision
+    review: ReviewRequest
+    human_outcome: dict[str, object]
     errors: Annotated[list[str], operator.add]
