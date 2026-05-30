@@ -77,3 +77,17 @@ source_modules =
 forbidden_modules =
     scrc.ml
     scrc.data
+
+[importlinter:contract:governance-is-contracts-only]
+name = Governance is deterministic and depends on contracts only
+type = forbidden
+source_modules =
+    scrc.governance
+forbidden_modules =
+    scrc.ml
+    scrc.data
+    scrc.tools
+    scrc.agents
+    scrc.orchestration
+    scrc.observability
+    scrc.api

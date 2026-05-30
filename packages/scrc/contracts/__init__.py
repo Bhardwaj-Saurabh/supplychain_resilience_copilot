@@ -19,6 +19,7 @@ from scrc.contracts.forecasting import QuantileForecastResult
 from scrc.contracts.logistics import AnomalyResult, CongestionMetrics, ShapFeature
 from scrc.contracts.macro import MacroSignals, RegimeLabel
 from scrc.contracts.provenance import DecisionProvenance
+from scrc.contracts.request import DecisionRequest
 from scrc.contracts.stockout import ConfidenceTier, ShapValue, StockoutRiskResult
 
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
     "ConfidenceTier",
     "CongestionMetrics",
     "DecisionProvenance",
+    "DecisionRequest",
     "EscalationTier",
     "MacroSignals",
     "NonNegFloat",
