@@ -16,6 +16,7 @@ from scrc.contracts.decision import (
     SupervisorDecision,
 )
 from scrc.contracts.forecasting import QuantileForecastResult
+from scrc.contracts.hitl import HumanDecision
 from scrc.contracts.logistics import AnomalyResult, CongestionMetrics, ShapFeature
 from scrc.contracts.macro import MacroSignals, RegimeLabel
 from scrc.contracts.provenance import DecisionProvenance
@@ -32,6 +33,7 @@ __all__ = [
     "DecisionProvenance",
     "DecisionRequest",
     "EscalationTier",
+    "HumanDecision",
     "MacroSignals",
     "NonNegFloat",
     "Probability",

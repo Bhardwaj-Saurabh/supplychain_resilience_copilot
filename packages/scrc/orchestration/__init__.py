@@ -8,6 +8,20 @@ leaves agents, tools, governance, and contracts untouched (P5, ADR-0003).
 from __future__ import annotations
 
 from scrc.orchestration.graph import AgentBundle, build_graph
+from scrc.orchestration.runner import (
+    interrupt_payload,
+    is_review_required,
+    resume_decision,
+    start_decision,
+)
 from scrc.orchestration.state import GraphState
 
-__all__ = ["AgentBundle", "GraphState", "build_graph"]
+__all__ = [
+    "AgentBundle",
+    "GraphState",
+    "build_graph",
+    "interrupt_payload",
+    "is_review_required",
+    "resume_decision",
+    "start_decision",
+]
