@@ -1,13 +1,15 @@
-"""Orchestration layer (Layer 4): the LangGraph adapter.
+"""Orchestration layer (Layer 4): the LangGraph adapter + portability seams.
 
-The only place LangGraph is imported. Wires the framework-agnostic agents into a
-checkpointable StateGraph; swapping this module for the MAF port (Module 6)
-leaves agents, tools, governance, and contracts untouched (P5, ADR-0003).
+LangGraph is imported only in ``graph.py``. The agents it wires are
+framework-agnostic, so ``run_pipeline`` (no orchestrator) and the MAF port reuse
+them unchanged (P5, ADR-0003).
 """
 
 from __future__ import annotations
 
-from scrc.orchestration.graph import AgentBundle, build_graph
+from scrc.orchestration.bundle import AgentBundle
+from scrc.orchestration.graph import build_graph
+from scrc.orchestration.portable import run_pipeline
 from scrc.orchestration.runner import (
     interrupt_payload,
     is_review_required,
@@ -23,5 +25,6 @@ __all__ = [
     "interrupt_payload",
     "is_review_required",
     "resume_decision",
+    "run_pipeline",
     "start_decision",
 ]

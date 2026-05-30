@@ -22,20 +22,12 @@ sends ROUTINE/MONITOR to END and REVIEW/CRITICAL to the review node, which
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
-from scrc.agents import (
-    DemandAgent,
-    LogisticsAgent,
-    MacroAgent,
-    StockoutAgent,
-    SupervisorAgent,
-)
 from scrc.governance import (
     AuditLog,
     InMemoryAuditLog,
@@ -45,18 +37,8 @@ from scrc.governance import (
     register_reversible_actions,
 )
 from scrc.observability import decision_span, record_audit_downgrade, record_decision
+from scrc.orchestration.bundle import AgentBundle
 from scrc.orchestration.state import GraphState
-
-
-@dataclass(frozen=True)
-class AgentBundle:
-    """The five agents, constructed (with real tools) at a composition root."""
-
-    demand: DemandAgent
-    logistics: LogisticsAgent
-    macro: MacroAgent
-    stockout: StockoutAgent
-    supervisor: SupervisorAgent
 
 
 def build_graph(

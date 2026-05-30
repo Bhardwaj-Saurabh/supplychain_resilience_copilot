@@ -54,6 +54,10 @@ observability = [
     "prometheus-client>=0.21",
     "mlflow>=2.16",
 ]
+# Module 6 (MAF port) intentionally has no extra: `agent-framework` pulls
+# pre-release sub-packages that break locked resolution. Install it manually to
+# run the port:  uv pip install "agent-framework>=1.0" --prerelease=allow
+#
 # Heavy orchestration/feature-store runtimes — declared for the Compose images,
 # not installed for local unit testing (Airflow/Feast pull large dep trees).
 pipeline = [
@@ -145,8 +149,17 @@ module = [
     "langchain_openai.*",
     "opentelemetry.*",
     "prometheus_client.*",
+    "agent_framework.*",
 ]
 ignore_missing_imports = true
+
+# The MAF port subclasses agent_framework's Executor and uses its decorators;
+# both resolve to Any (SDK not installed locally), so relax those strict checks
+# for this teaching-port module only.
+[[tool.mypy.overrides]]
+module = "scrc.orchestration.maf.*"
+disallow_subclassing_any = false
+disallow_untyped_decorators = false
 
 # ---------------------------------------------------------------------------
 # pytest

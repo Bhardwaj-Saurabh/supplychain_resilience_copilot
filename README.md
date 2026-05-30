@@ -66,4 +66,4 @@ deploy/            docker-compose.yml + Azure manifests
 | 4 | Governance tiering, 5 agents, LangGraph graph (Module 3) | ✅ |
 | 5 | SHAP-to-brief (LLM) + `interrupt()` HITL gate (Module 4) | ✅ |
 | 6 | Audit gate + rollback + circuit breaker + OTEL/Prometheus/MLflow (Module 5) | ✅ |
-| 7 | FastAPI surface + Microsoft Agent Framework port (Module 6) | ⬜ |
+| 7 | FastAPI surface + HITL webhook + Microsoft Agent Framework port (Module 6) | ✅ |
