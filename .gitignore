@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.Python
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+uv.lock
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+
+# Data & artefacts (large / generated)
+data/
+artifacts/
+mlruns/
+*.parquet
+*.csv
+*.joblib
+*.pkl
+
+# Editor / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store

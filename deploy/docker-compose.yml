@@ -1,0 +1,145 @@
+# Supply Chain Resilience Co-Pilot — local stack (skeleton).
+#
+# Grouped per architecture.md §13. Infra services (postgres, mlflow, otel,
+# prometheus, grafana) use real images and are runnable now. Application and
+# inference services are declared as BUILD STUBS — their Dockerfiles/contexts
+# land in their respective phases (Modules 1–5). `make up` is intentionally a
+# stub until those exist.
+#
+# NOTE: the PRD §9.1 headline says "twelve services"; faithfully expanding the
+# groups (incl. 3 Airflow services + Opik) yields more. The exact count is to
+# be reconciled — see the open question raised with the architecture owner.
+
+name: scrc
+
+x-postgres-env: &postgres-env
+  POSTGRES_USER: ${POSTGRES_USER:-scrc}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+  POSTGRES_DB: ${POSTGRES_DB:-scrc}
+
+networks:
+  scrc:
+    driver: bridge
+
+volumes:
+  pgdata:
+  mlflow-artifacts:
+  grafana-data:
+  prometheus-data:
+
+services:
+  # --- Data zone -----------------------------------------------------------
+  postgres:
+    image: postgres:16
+    environment: *postgres-env
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scrc}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [scrc]
+
+  # --- ML lifecycle --------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.2
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri postgresql://${POSTGRES_USER:-scrc}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-scrc}
+      --default-artifact-root /artifacts
+    ports: ["5000:5000"]
+    volumes: ["mlflow-artifacts:/artifacts"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [scrc]
+
+  feast:
+    # BUILD STUB (Module 1): Feast feature server on the shared PostgreSQL.
+    # build: { context: .., dockerfile: deploy/feast.Dockerfile }
+    image: busybox
+    command: ["sh", "-c", "echo 'feast stub — implemented in Module 1'; sleep infinity"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [scrc]
+
+  # --- Pipeline (Airflow) --------------------------------------------------
+  airflow-webserver: &airflow
+    # BUILD STUB (Module 1): pin apache/airflow + our DAGs in pipelines/.
+    image: apache/airflow:2.10.2
+    profiles: ["pipeline"]
+    env_file: [../.env]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [scrc]
+    command: ["bash", "-c", "echo 'airflow webserver stub'; sleep infinity"]
+
+  airflow-scheduler:
+    <<: *airflow
+    command: ["bash", "-c", "echo 'airflow scheduler stub'; sleep infinity"]
+
+  airflow-worker:
+    <<: *airflow
+    command: ["bash", "-c", "echo 'airflow worker stub'; sleep infinity"]
+
+  # --- Inference (ML-as-Tool serving) -------------------------------------
+  chronos-inference:
+    # BUILD STUB (Module 2): local AutoGluon/Chronos-2 container; in cloud this
+    # is an Azure AI Foundry managed endpoint (ADR-0004).
+    image: busybox
+    command: ["sh", "-c", "echo 'chronos inference stub'; sleep infinity"]
+    networks: [scrc]
+
+  sklearn-inference:
+    # BUILD STUB (Module 2): XGBoost+SHAP+MAPIE and Isolation Forest+KernelSHAP.
+    image: busybox
+    command: ["sh", "-c", "echo 'sklearn inference stub'; sleep infinity"]
+    networks: [scrc]
+
+  # --- Orchestration + interface ------------------------------------------
+  agent-runtime:
+    # BUILD STUB (Module 3): LangGraph StateGraph runtime.
+    image: busybox
+    command: ["sh", "-c", "echo 'agent runtime stub'; sleep infinity"]
+    depends_on: [postgres, mlflow]
+    networks: [scrc]
+
+  api:
+    # BUILD STUB (Module 3): FastAPI — actions, inference, HITL webhook.
+    image: busybox
+    command: ["sh", "-c", "echo 'fastapi stub'; sleep infinity"]
+    ports: ["8000:8000"]
+    depends_on: [agent-runtime]
+    networks: [scrc]
+
+  # --- Observability -------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.110.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./otel-collector.yaml:/etc/otelcol/config.yaml:ro"]
+    ports: ["4317:4317", "4318:4318"]
+    networks: [scrc]
+
+  opik:
+    # BUILD STUB (Module 5): Comet Opik — agent tracing + evaluation (ADR-0005).
+    # Opik ships its own compose; integrate here or run side-by-side.
+    image: busybox
+    command: ["sh", "-c", "echo 'opik stub — wired in Module 5'; sleep infinity"]
+    networks: [scrc]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "prometheus-data:/prometheus"
+    ports: ["9090:9090"]
+    networks: [scrc]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes: ["grafana-data:/var/lib/grafana"]
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+    networks: [scrc]

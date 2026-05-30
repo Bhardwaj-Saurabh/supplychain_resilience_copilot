@@ -1,0 +1,70 @@
+# Enforces the dependency-direction rules from ADR-0003 (hexagonal layering).
+# Run with: lint-imports  (or: make lint-imports)
+#
+# Rule of thumb: dependencies point INWARD toward contracts.
+#   api > orchestration > agents > tools > contracts
+# ml serving sits beside tools (both above contracts); governance and
+# observability are cross-cutting. Agents must reach models only through
+# tools — never import scrc.ml directly.
+
+[importlinter]
+root_package = scrc
+
+[importlinter:contract:core-independence]
+name = Contracts depend on nothing else in scrc
+type = forbidden
+source_modules =
+    scrc.contracts
+forbidden_modules =
+    scrc.ml
+    scrc.tools
+    scrc.agents
+    scrc.orchestration
+    scrc.governance
+    scrc.observability
+    scrc.api
+
+[importlinter:contract:layered]
+name = Inward-pointing layers
+type = layers
+layers =
+    scrc.api
+    scrc.orchestration
+    scrc.agents
+    scrc.tools
+    scrc.contracts
+
+[importlinter:contract:ml-is-leaf]
+name = ML serving may use contracts only
+type = forbidden
+source_modules =
+    scrc.ml
+forbidden_modules =
+    scrc.tools
+    scrc.agents
+    scrc.orchestration
+    scrc.governance
+    scrc.api
+
+[importlinter:contract:agents-use-tools-not-models]
+name = Agents reach models only through tools (never import scrc.ml or scrc.data)
+type = forbidden
+source_modules =
+    scrc.agents
+forbidden_modules =
+    scrc.ml
+    scrc.data
+
+[importlinter:contract:data-is-leaf]
+name = Data layer may use contracts only (Layer 1)
+type = forbidden
+source_modules =
+    scrc.data
+forbidden_modules =
+    scrc.ml
+    scrc.tools
+    scrc.agents
+    scrc.orchestration
+    scrc.governance
+    scrc.observability
+    scrc.api

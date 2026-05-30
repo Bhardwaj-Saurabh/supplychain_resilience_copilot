@@ -1,0 +1,94 @@
+[project]
+name = "scrc"
+version = "0.1.0"
+description = "Supply Chain Resilience Co-Pilot — multi-agent, ML-as-Tool decision-support system"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Lead AI Architect" }]
+
+# Phase 0–1 keeps runtime deps minimal: contracts only need Pydantic v2.
+# Heavier stacks (LangGraph, Feast, MLflow, Chronos/AutoGluon, XGBoost, SHAP,
+# FastAPI, OpenTelemetry) are added in their own phases via optional groups
+# so the foundation stays fast to install and test.
+dependencies = [
+    "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+# Layer 1 (data & feature) runtime libs — installable and unit-testable.
+data = [
+    "pandas>=2.2",
+    "pyarrow>=16",
+    "httpx>=0.27",
+]
+# Heavy orchestration/feature-store runtimes — declared for the Compose images,
+# not installed for local unit testing (Airflow/Feast pull large dep trees).
+pipeline = [
+    "feast>=0.40",
+    "apache-airflow>=2.10",
+]
+dev = [
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "import-linter>=2.0",
+    "pandas-stubs>=2.2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Source root is packages/; the single importable namespace is `scrc`.
+package-dir = { "" = "packages" }
+
+[tool.setuptools.packages.find]
+where = ["packages"]
+include = ["scrc*"]
+
+[tool.setuptools.package-data]
+scrc = ["py.typed"]
+
+# ---------------------------------------------------------------------------
+# Ruff — lint + format
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["packages", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["scrc"]
+
+# ---------------------------------------------------------------------------
+# mypy — static typing (strict; this is a typed-contracts codebase)
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "packages"
+namespace_packages = true
+explicit_package_bases = true
+strict = true
+warn_unused_configs = true
+plugins = ["pydantic.mypy"]
+
+# Data-wrangling modules lean on pandas, whose operations frequently widen to
+# Any. Keep the codebase strict everywhere else but relax Any-return warnings
+# for scrc.data so feature engineering reads naturally.
+[[tool.mypy.overrides]]
+module = "scrc.data.*"
+warn_return_any = false
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+pythonpath = ["packages"]

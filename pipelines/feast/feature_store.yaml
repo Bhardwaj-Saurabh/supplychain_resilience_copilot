@@ -1,0 +1,27 @@
+# Feast feature store config (ADR-0006: PostgreSQL online store + SQL registry;
+# offline training data as parquet materialised by Airflow).
+#
+# Values use ${ENV} placeholders — render from .env before `feast apply`
+# (e.g. envsubst), or set FEAST_* equivalents in the runtime. Kept declarative
+# here; the materialisation DAG injects credentials.
+project: scrc
+provider: local
+
+registry:
+  registry_type: sql
+  path: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
+online_store:
+  type: postgres
+  host: ${POSTGRES_HOST}
+  port: ${POSTGRES_PORT}
+  database: ${POSTGRES_DB}
+  db_schema: feast
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+
+# Offline store = parquet files materialised under data/feast/ by the pipeline.
+offline_store:
+  type: file
+
+entity_key_serialization_version: 2
