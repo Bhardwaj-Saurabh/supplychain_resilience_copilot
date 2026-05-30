@@ -68,3 +68,12 @@ forbidden_modules =
     scrc.governance
     scrc.observability
     scrc.api
+
+[importlinter:contract:tools-decoupled-from-impls]
+name = Tools depend on ports, not concrete ml/data implementations
+type = forbidden
+source_modules =
+    scrc.tools
+forbidden_modules =
+    scrc.ml
+    scrc.data

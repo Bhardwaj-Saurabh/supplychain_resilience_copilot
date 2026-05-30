@@ -62,7 +62,7 @@ deploy/            docker-compose.yml + Azure manifests
 | 0 | Repo scaffolding, tooling, layer enforcement, Compose skeleton | ✅ |
 | 1 | Typed contracts (all schemas) | ✅ |
 | 2 | Data layer (`scrc.data`), Feast definitions + Airflow DAGs (Module 1) | ✅ |
-| 3 | ML models as tools (Module 2) | ⬜ |
+| 3 | ML serving (`scrc.ml`) + ML-as-Tool boundary (`scrc.tools`) (Module 2) | ✅ |
 | 4 | LangGraph multi-agent graph (Module 3) | ⬜ |
 | 5 | Uncertainty + HITL (Module 4) | ⬜ |
 | 6 | Observability + governance (Module 5) | ⬜ |

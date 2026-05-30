@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Implementation is **underway, phase by phase** (see the roadmap in [README.md](README.md)). Done so far:
 - **Phase 0–1:** repo scaffolding, tooling, machine-enforced layer boundaries, Docker Compose skeleton, and all typed contracts in [packages/scrc/contracts/](packages/scrc/contracts/).
 - **Phase 2 (Module 1):** the data & feature layer in [packages/scrc/data/](packages/scrc/data/) (ingestion, feature engineering, validation) plus thin Feast/Airflow wrappers in [pipelines/](pipelines/).
+- **Phase 3 (Module 2):** ML serving in [packages/scrc/ml/](packages/scrc/ml/) (Chronos client, XGBoost+SHAP, Isolation Forest+KernelSHAP, MLflow registry) and the ML-as-Tool boundary in [packages/scrc/tools/](packages/scrc/tools/) — tools depend on **structural ports**, not on `scrc.ml`/`scrc.data` (enforced).
 
 The authoritative spec is [docs/supply_chain_copilot_PRD.md](docs/supply_chain_copilot_PRD.md) (PRD v1.0); the design is in [docs/architecture.md](docs/architecture.md) and decisions in [docs/adr/](docs/adr/). Follow these rather than improvising — they are intentionally prescriptive because this is also a teaching reference architecture. **When adding code, respect the layer/dependency rules in [.importlinter](.importlinter)** (`contracts ← data/ml ← tools ← agents ← orchestration`; governance/observability cross-cutting) — they are enforced in CI.
 
