@@ -112,6 +112,24 @@ class SupervisorAgent:
             for i, (a, r, rev) in enumerate(proposals)
         ]
 
+    def escalate_missing(self, request: DecisionRequest, reason: str) -> SupervisorDecision:
+        """Build a CRITICAL, non-autonomous decision when a required upstream
+        signal is missing/timed-out — never hallucinate past it (PRD §7.4)."""
+        outcome = evaluate_escalation(
+            EscalationSignals(stockout_probability=0.0, uncertainty_ratio=0.0, missing_signal=True)
+        )
+        provenance = self._build_provenance(request)
+        return SupervisorDecision(
+            decision_id=provenance.input_hash[:16],
+            sku_id=request.sku_id,
+            store_id=request.store_id,
+            tier=outcome.tier,
+            stockout_probability=0.0,
+            autonomous=outcome.autonomous,
+            recommended_actions=[],
+            provenance=provenance,
+        )
+
     def _build_provenance(self, request: DecisionRequest) -> DecisionProvenance:
         input_hash = hashlib.sha256(request.model_dump_json().encode()).hexdigest()
         p = self._provenance

@@ -31,6 +31,11 @@ ml = [
     "mlflow>=2.16",
     "httpx>=0.27",
 ]
+# Layer 4 (orchestration): LangGraph StateGraph + checkpointing.
+orchestration = [
+    "langgraph>=0.2",
+    "langchain-core>=0.3",
+]
 # Heavy orchestration/feature-store runtimes — declared for the Compose images,
 # not installed for local unit testing (Airflow/Feast pull large dep trees).
 pipeline = [
@@ -100,9 +105,14 @@ warn_return_any = false
 module = "scrc.ml.*"
 warn_return_any = false
 
+# Orchestration builds on LangGraph (untyped); relax Any-return warnings there.
+[[tool.mypy.overrides]]
+module = "scrc.orchestration.*"
+warn_return_any = false
+
 # Third-party ML/serving libs without bundled type stubs.
 [[tool.mypy.overrides]]
-module = ["sklearn.*", "xgboost.*", "shap.*", "mlflow.*"]
+module = ["sklearn.*", "xgboost.*", "shap.*", "mlflow.*", "langgraph.*", "langchain_core.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------

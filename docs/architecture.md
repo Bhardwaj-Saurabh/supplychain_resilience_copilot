@@ -585,9 +585,8 @@ supplychain_resilience_copilot/
 │       │   ├── classification/    # XGBoost + SHAP + MAPIE
 │       │   └── anomaly/           # Isolation Forest + KernelSHAP
 │       ├── tools/                 # ToolPort interfaces + adapters to ml/
-│       ├── agents/                # 5 agents — import contracts + tools only
-│       │   └── demand/ logistics/ macro/ stockout/ supervisor/
-│       ├── orchestration/         # LangGraph graph; maf/ port adapter
+│       ├── agents/                # demand/logistics/macro/stockout/supervisor.py
+│       ├── orchestration/         # LangGraph graph (state.py, graph.py); maf/ port later
 │       ├── governance/            # escalation, HITL, audit, rollback, breakers
 │       ├── observability/         # OTEL setup, Opik + Prometheus exporters
 │       └── api/                   # FastAPI: actions, inference, HITL webhook
