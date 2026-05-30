@@ -65,5 +65,5 @@ deploy/            docker-compose.yml + Azure manifests
 | 3 | ML serving (`scrc.ml`) + ML-as-Tool boundary (`scrc.tools`) (Module 2) | ✅ |
 | 4 | Governance tiering, 5 agents, LangGraph graph (Module 3) | ✅ |
 | 5 | SHAP-to-brief (LLM) + `interrupt()` HITL gate (Module 4) | ✅ |
-| 6 | Observability (Opik/OTEL) + MLflow audit + rollback (Module 5) | ⬜ |
-| 7 | Microsoft Agent Framework port (Module 6) | ⬜ |
+| 6 | Audit gate + rollback + circuit breaker + OTEL/Prometheus/MLflow (Module 5) | ✅ |
+| 7 | FastAPI surface + Microsoft Agent Framework port (Module 6) | ⬜ |

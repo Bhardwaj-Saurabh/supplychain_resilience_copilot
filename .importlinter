@@ -106,3 +106,16 @@ forbidden_modules =
     scrc.governance
     scrc.observability
     scrc.api
+
+[importlinter:contract:observability-is-low]
+name = Observability may use contracts and governance only
+type = forbidden
+source_modules =
+    scrc.observability
+forbidden_modules =
+    scrc.ml
+    scrc.data
+    scrc.tools
+    scrc.agents
+    scrc.orchestration
+    scrc.api

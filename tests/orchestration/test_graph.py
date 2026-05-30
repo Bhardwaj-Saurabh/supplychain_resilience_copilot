@@ -23,6 +23,7 @@ from scrc.contracts import (
     RegimeLabel,
     StockoutRiskResult,
 )
+from scrc.governance import AuditWriteError
 from scrc.orchestration import AgentBundle, build_graph
 
 
@@ -154,3 +155,35 @@ def test_decision_is_reproducible_across_threads() -> None:
     )
     assert first["decision"].decision_id == second["decision"].decision_id
     assert first["decision"].tier is second["decision"].tier
+
+
+class _FailingAudit:
+    def log_decision(self, decision: object, human_outcome: object = None) -> object:
+        raise AuditWriteError("audit backend down")
+
+
+def test_autonomous_decision_is_audited_and_registers_rollback() -> None:
+    # Single anomaly at low prob -> MONITOR (autonomous) with two reversible
+    # actions (reroute, expedite) -> both registered for rollback before execution.
+    app = build_graph(_bundle(0.1, anomaly=True, regime=RegimeLabel.NEUTRAL))
+    result = app.invoke(
+        {"request": _request(), "errors": []}, {"configurable": {"thread_id": "audit-ok"}}
+    )
+    assert "__interrupt__" not in result
+    assert result["decision"].tier is EscalationTier.MONITOR
+    assert result["decision"].autonomous is True
+    assert result["audit_id"] is not None
+    assert len(result["rollback_entry_ids"]) == 2
+
+
+def test_audit_failure_downgrades_autonomy_to_hitl() -> None:
+    # No-audit-no-autonomy (ADR-0002): an otherwise-autonomous MONITOR decision
+    # whose audit write fails is downgraded and routed to the human review gate.
+    app = build_graph(_bundle(0.1, anomaly=True, regime=RegimeLabel.NEUTRAL), audit=_FailingAudit())
+    result = app.invoke(
+        {"request": _request(), "errors": []}, {"configurable": {"thread_id": "audit-fail"}}
+    )
+    assert "__interrupt__" in result  # downgraded -> review -> interrupt
+    assert result["decision"].autonomous is False
+    assert result["audit_id"] is None
+    assert any("audit" in e for e in result.get("errors", []))

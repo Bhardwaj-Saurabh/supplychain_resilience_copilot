@@ -4,18 +4,20 @@ This is the *only* module that imports LangGraph. The agents it wires are
 framework-agnostic (P5), so the MAF port (Module 6) reuses them and swaps this
 adapter. Topology (architecture.md §5):
 
-    START ─▶ demand ─┐                          autonomous ─▶ END
-            logistics ┼─▶ stockout ─▶ supervisor ─┤
-            macro ────┘                          escalate ─▶ review ─(interrupt)─▶ END
+    START ─▶ demand ─┐                                   autonomous ─▶ END
+            logistics ┼─▶ stockout ─▶ supervisor ─▶ audit ─┤
+            macro ────┘                                   escalate ─▶ review ─(interrupt)─▶ END
 
 The three specialists fan out in parallel; ``stockout`` joins (runs once after
 all three) because it needs the joint feature vector. Each specialist node is
 wrapped so a failure records an error and leaves its output ``None`` — the
 Supervisor then escalates to CRITICAL rather than acting on a partial picture.
 
-ROUTINE/MONITOR decisions are autonomous and end the run; REVIEW/CRITICAL route
-to the review node, which ``interrupt()``s to a human and resumes from the
-checkpoint with their outcome (PRD §6.3). Requires a checkpointer.
+The ``audit`` node logs every decision and enforces no-audit-no-autonomy
+(ADR-0002): an unauditable autonomous decision is downgraded to HITL; otherwise
+reversible actions are registered for rollback before execution. Routing then
+sends ROUTINE/MONITOR to END and REVIEW/CRITICAL to the review node, which
+``interrupt()``s to a human and resumes from the checkpoint (PRD §6.3).
 """
 
 from __future__ import annotations
@@ -34,6 +36,15 @@ from scrc.agents import (
     StockoutAgent,
     SupervisorAgent,
 )
+from scrc.governance import (
+    AuditLog,
+    InMemoryAuditLog,
+    InMemoryRollbackRegistry,
+    RollbackRegistry,
+    enforce_audit,
+    register_reversible_actions,
+)
+from scrc.observability import decision_span, record_audit_downgrade, record_decision
 from scrc.orchestration.state import GraphState
 
 
@@ -48,12 +59,20 @@ class AgentBundle:
     supervisor: SupervisorAgent
 
 
-def build_graph(bundle: AgentBundle, checkpointer: Any = None) -> Any:
+def build_graph(
+    bundle: AgentBundle,
+    checkpointer: Any = None,
+    audit: AuditLog | None = None,
+    rollback: RollbackRegistry | None = None,
+) -> Any:
     """Compile the decision StateGraph for the given agent bundle.
 
-    Pass a ``PostgresSaver`` in production; defaults to an in-process
-    ``MemorySaver`` (sufficient for tests and single-process runs).
+    Pass a ``PostgresSaver`` checkpointer, an ``MlflowAuditLog``, and a durable
+    rollback registry in production; all default to in-process implementations
+    (sufficient for tests and single-process runs).
     """
+    audit_log = audit or InMemoryAuditLog()
+    rollback_registry = rollback or InMemoryRollbackRegistry()
 
     def demand_node(state: GraphState) -> GraphState:
         try:
@@ -97,6 +116,30 @@ def build_graph(bundle: AgentBundle, checkpointer: Any = None) -> Any:
             "decision": bundle.supervisor.synthesise(request, forecast, anomaly, macro, stockout)
         }
 
+    def audit_node(state: GraphState) -> GraphState:
+        # Logs every decision and enforces no-audit-no-autonomy (ADR-0002): if an
+        # autonomous decision cannot be audited, it is downgraded to HITL. For
+        # decisions that remain autonomous, reversible actions are registered in
+        # the rollback registry BEFORE execution (PRD §7.4).
+        decision = state["decision"]
+        with decision_span(
+            "decision",
+            tier=decision.tier.value,
+            autonomous=decision.autonomous,
+            input_hash=decision.provenance.input_hash,
+        ):
+            outcome = enforce_audit(decision, audit_log)
+        record_decision(outcome.decision.tier.value, outcome.decision.autonomous)
+
+        updates: GraphState = {"decision": outcome.decision, "audit_id": outcome.audit_id}
+        if outcome.downgraded:
+            record_audit_downgrade()
+            updates["errors"] = ["audit unavailable: autonomy downgraded to review (ADR-0002)"]
+        if outcome.decision.autonomous:
+            entries = register_reversible_actions(outcome.decision, rollback_registry)
+            updates["rollback_entry_ids"] = [e.entry_id for e in entries]
+        return updates
+
     def review_node(state: GraphState) -> GraphState:
         # Reached only for non-autonomous (REVIEW/CRITICAL) decisions. interrupt()
         # durably pauses the graph and surfaces the ReviewRequest to the planner;
@@ -107,7 +150,8 @@ def build_graph(bundle: AgentBundle, checkpointer: Any = None) -> Any:
         human_outcome: dict[str, object] = interrupt(review.model_dump(mode="json"))
         return {"review": review, "human_outcome": human_outcome}
 
-    def route_after_supervisor(state: GraphState) -> str:
+    def route_after_audit(state: GraphState) -> str:
+        # Routes on the possibly-downgraded decision (no-audit-no-autonomy).
         return "end" if state["decision"].autonomous else "review"
 
     graph = StateGraph(GraphState)
@@ -116,15 +160,15 @@ def build_graph(bundle: AgentBundle, checkpointer: Any = None) -> Any:
     graph.add_node("macro", macro_node)
     graph.add_node("stockout", stockout_node)
     graph.add_node("supervisor", supervisor_node)
+    graph.add_node("audit", audit_node)
     graph.add_node("review", review_node)
 
     for specialist in ("demand", "logistics", "macro"):
         graph.add_edge(START, specialist)
         graph.add_edge(specialist, "stockout")
     graph.add_edge("stockout", "supervisor")
-    graph.add_conditional_edges(
-        "supervisor", route_after_supervisor, {"review": "review", "end": END}
-    )
+    graph.add_edge("supervisor", "audit")
+    graph.add_conditional_edges("audit", route_after_audit, {"review": "review", "end": END})
     graph.add_edge("review", END)
 
     # A checkpointer is required for interrupt()/resume; MemorySaver suffices

@@ -42,6 +42,13 @@ llm = [
     "langchain-openai>=0.2",
     "langchain-core>=0.3",
 ]
+# Observability: OTEL emission -> Opik (ADR-0005), Prometheus metrics, MLflow audit.
+observability = [
+    "opentelemetry-sdk>=1.27",
+    "opentelemetry-exporter-otlp>=1.27",
+    "prometheus-client>=0.21",
+    "mlflow>=2.16",
+]
 # Heavy orchestration/feature-store runtimes — declared for the Compose images,
 # not installed for local unit testing (Airflow/Feast pull large dep trees).
 pipeline = [
@@ -116,6 +123,11 @@ warn_return_any = false
 module = "scrc.orchestration.*"
 warn_return_any = false
 
+# Observability wraps untyped OTEL/Prometheus/MLflow clients.
+[[tool.mypy.overrides]]
+module = "scrc.observability.*"
+warn_return_any = false
+
 # Third-party ML/serving libs without bundled type stubs.
 [[tool.mypy.overrides]]
 module = [
@@ -126,6 +138,8 @@ module = [
     "langgraph.*",
     "langchain_core.*",
     "langchain_openai.*",
+    "opentelemetry.*",
+    "prometheus_client.*",
 ]
 ignore_missing_imports = true
 

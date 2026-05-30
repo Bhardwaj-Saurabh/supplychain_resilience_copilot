@@ -28,6 +28,8 @@ class GraphState(TypedDict, total=False):
     macro: MacroSignals | None
     stockout: StockoutRiskResult | None
     decision: SupervisorDecision
+    audit_id: str | None
+    rollback_entry_ids: list[str]
     review: ReviewRequest
     human_outcome: dict[str, object]
     errors: Annotated[list[str], operator.add]
