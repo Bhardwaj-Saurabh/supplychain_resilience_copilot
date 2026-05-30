@@ -150,6 +150,7 @@ module = [
     "opentelemetry.*",
     "prometheus_client.*",
     "agent_framework.*",
+    "opik.*",
 ]
 ignore_missing_imports = true
 

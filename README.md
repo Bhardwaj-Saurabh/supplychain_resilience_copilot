@@ -34,6 +34,7 @@ Common targets (`make help` for the full list):
 | `make type` | Static typing (mypy, strict) |
 | `make lint-imports` | Enforce layer boundaries (ADR-0003) |
 | `make test` | Run the test suite |
+| `make eval` | Routing reproducibility + disruption-replay gate (ADR-0007) |
 
 ## Repository layout
 
@@ -49,6 +50,7 @@ packages/scrc/
   orchestration/   LangGraph graph; maf/ port adapter
   governance/      escalation, HITL, audit, rollback, circuit breakers
   observability/   OTEL setup, Opik + Prometheus exporters
+  eval/            Opik routing-reproducibility + disruption-replay gate
   api/             FastAPI: actions, inference, HITL webhook
 pipelines/         Airflow DAGs, Feast feature definitions
 eval/              Opik datasets, experiments, disruption replay

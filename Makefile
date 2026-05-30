@@ -6,7 +6,7 @@
 SHELL := /bin/bash
 UV := uv
 
-.PHONY: help setup fmt lint type test check lint-imports up down data-init clean
+.PHONY: help setup fmt lint type test check lint-imports eval up down data-init clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -32,6 +32,9 @@ lint-imports: ## Enforce layer/dependency boundaries (ADR-0003)
 
 test: ## Run the test suite
 	$(UV) run pytest
+
+eval: ## Run the routing evaluation as a release gate (ADR-0007)
+	$(UV) run python -m scrc.eval
 
 check: lint type lint-imports test ## Run all quality gates (CI parity)
 

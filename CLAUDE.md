@@ -62,10 +62,11 @@ Python 3.11+ with [`uv`](https://docs.astral.sh/uv/). Quality gates (run by `mak
 - `make lint` (ruff) · `make type` (mypy **strict**) · `make lint-imports` (layer boundaries) · `make test` (pytest).
 - Single test: `uv run pytest tests/contracts/test_forecasting.py::test_model_is_frozen`.
 - `make fmt` — ruff format + autofix.
+- `make eval` — routing reproducibility + disruption-replay gate ([scrc.eval](packages/scrc/eval/); ADR-0007); exits non-zero on regression.
 
-Conventions that matter: contracts are **frozen** Pydantic models with `extra="forbid"`; the `scrc.data.*` modules have a mypy override relaxing only `warn_return_any` (pandas) — keep the rest strict.
+Conventions that matter: contracts are **frozen** Pydantic models with `extra="forbid"`; the `scrc.data.*`/`scrc.ml.*`/`scrc.orchestration.*`/`scrc.observability.*` modules have mypy overrides relaxing only `warn_return_any` for their untyped third-party libs — keep the rest strict.
 
-Still to come (PRD-specified, not yet built): `docker-compose up` for the full service stack (currently a skeleton with infra services real and app/inference services as build stubs — see [deploy/docker-compose.yml](deploy/docker-compose.yml)); `make data-init`; and the **Opik** evaluation harness (routing reproducibility ≥ 95%, disruption replay: COVID, Suez 2021, Red Sea 2024).
+Still to come (PRD-specified, not yet built): a real composition root + `docker-compose up` for the full service stack (currently a skeleton with infra services real and app/inference services as build stubs — see [deploy/docker-compose.yml](deploy/docker-compose.yml)); `make data-init`; the Monitoring Agent + drift-triggered retraining; and the 4 Grafana dashboards. Optional SDKs (`agent-framework`, `opik`) are documented manual installs, not locked extras.
 
 ## Hard constraints (PRD §12 — out of scope for v1)
 
