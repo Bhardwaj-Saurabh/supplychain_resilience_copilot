@@ -142,6 +142,11 @@ warn_return_any = false
 module = "scrc.app.*"
 warn_return_any = false
 
+# Monitoring uses sklearn/optuna (untyped) for HPO and scoring.
+[[tool.mypy.overrides]]
+module = "scrc.monitoring.*"
+warn_return_any = false
+
 # Third-party ML/serving libs without bundled type stubs.
 [[tool.mypy.overrides]]
 module = [
@@ -156,6 +161,7 @@ module = [
     "prometheus_client.*",
     "agent_framework.*",
     "opik.*",
+    "optuna.*",
 ]
 ignore_missing_imports = true
 

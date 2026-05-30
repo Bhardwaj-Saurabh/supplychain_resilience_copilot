@@ -72,7 +72,9 @@ packages/scrc/
   governance/      escalation, HITL, audit, rollback, circuit breakers
   observability/   OTEL setup, Opik + Prometheus exporters
   eval/            Opik routing-reproducibility + disruption-replay gate
+  monitoring/      drift detection + drift-triggered, gated retraining
   api/             FastAPI: actions, inference, HITL webhook
+  app/             composition root (build_app factory; demo/production)
 pipelines/         Airflow DAGs, Feast feature definitions
 eval/              Opik datasets, experiments, disruption replay
 deploy/            docker-compose.yml + Azure manifests
