@@ -22,6 +22,15 @@ data = [
     "pyarrow>=16",
     "httpx>=0.27",
 ]
+# Layer 2 (ML serving): training, calibration, attribution, registry, Chronos client.
+ml = [
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "shap>=0.46",
+    "numpy>=1.26",
+    "mlflow>=2.16",
+    "httpx>=0.27",
+]
 # Heavy orchestration/feature-store runtimes — declared for the Compose images,
 # not installed for local unit testing (Airflow/Feast pull large dep trees).
 pipeline = [
@@ -84,6 +93,17 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = "scrc.data.*"
 warn_return_any = false
+
+# ML serving leans on sklearn/xgboost/shap, which return Any; relax Any-return
+# warnings for scrc.ml only — the rest of the package stays strict.
+[[tool.mypy.overrides]]
+module = "scrc.ml.*"
+warn_return_any = false
+
+# Third-party ML/serving libs without bundled type stubs.
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "xgboost.*", "shap.*", "mlflow.*"]
+ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
 # pytest
