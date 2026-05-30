@@ -70,7 +70,9 @@ Run the app: `make serve` (uvicorn, **demo profile** — boots with no external 
 
 The Monitoring Agent ([scrc.monitoring](packages/scrc/monitoring/)) does drift detection (rolling MAPE/F1) and drift-triggered, gated retraining — Optuna HPO with a grid fallback, promotion auto vs human-approval mirroring the operational HITL gate (PRD §8.2). Optuna is an optional manual install (grid fallback otherwise).
 
-Still to come (PRD-specified, not yet built): the **production** composition wiring (Chronos/Azure/MLflow/Feast — adapters exist, `build_production_bundle` raises until assembled), the remaining inference/pipeline Compose services (still build stubs), `make data-init`, scheduling the Monitoring Agent + wiring its MLflow registration/HITL promotion, and the 4 Grafana dashboards. Optional SDKs (`agent-framework`, `opik`) are documented manual installs, not locked extras.
+The **production** profile is wired in [scrc.app.production](packages/scrc/app/production.py): a Feast-online `FeatureProvider`, joblib-loaded XGBoost/IsolationForest (from `SCRC_MODEL_DIR`), the Chronos endpoint, an Azure OpenAI `BriefWriter`, and the MLflow audit log — assembled from env via `ProductionConfig.from_env` (raises `ProductionConfigError` if unconfigured). `assemble_bundle` is pure wiring (unit-tested with fakes); the live adapters need their services.
+
+Still to come (needs live services or can't run here): standing up the production stack end-to-end, the durable PostgresSaver entrypoint, the remaining inference/pipeline Compose services (still build stubs), `make data-init`, scheduling the Monitoring Agent + its MLflow registration/HITL promotion, and the 4 Grafana dashboards. Optional SDKs (`agent-framework`, `opik`) are documented manual installs, not locked extras.
 
 ## Hard constraints (PRD §12 — out of scope for v1)
 

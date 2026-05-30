@@ -55,20 +55,11 @@ def build_demo_bundle() -> AgentBundle:
     )
 
 
-def build_production_bundle() -> AgentBundle:
-    """Production wiring is deployment-specific: a ChronosForecaster against the
-    Foundry endpoint, MLflow-registry-loaded XGBoost/IsolationForest behind the
-    tool ports, a Feast-backed FeatureProvider, an AzureOpenAIClient BriefWriter,
-    and the MlflowAuditLog passed to build_graph. The adapters all exist
-    (scrc.ml, scrc.llm, scrc.observability); assembling them requires the live
-    services and credentials, so it is left to the deployment entrypoint."""
-    raise NotImplementedError(
-        "production composition requires MLflow/Feast/Chronos/Azure services; "
-        "wire the existing adapters at the deployment entrypoint"
-    )
-
-
 def build_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
-    bundle = build_production_bundle() if settings.profile == "production" else build_demo_bundle()
-    return create_app(build_graph(bundle))
+    if settings.profile == "production":
+        # Imported lazily so the demo profile never needs Feast/Azure/MLflow.
+        from scrc.app.production import ProductionConfig, build_production_graph
+
+        return create_app(build_production_graph(ProductionConfig.from_env()))
+    return create_app(build_graph(build_demo_bundle()))

@@ -14,7 +14,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from feast import Entity, FeatureView, Field, FileSource
-from feast.types import Bool, Float32
+from feast.types import Array, Bool, Float32
 
 from scrc.data.schemas import FEATURE_SCHEMA_VERSION
 
@@ -47,6 +47,8 @@ demand_features = FeatureView(
         Field(name="on_promo", dtype=Bool),
         Field(name="snap_flag", dtype=Bool),
         Field(name="event_flag", dtype=Bool),
+        # Rolling lookback window materialised for the forecaster's context.
+        Field(name="recent_unit_sales", dtype=Array(Float32)),
     ],
 )
 

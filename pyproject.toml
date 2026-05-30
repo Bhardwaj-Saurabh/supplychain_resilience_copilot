@@ -162,6 +162,8 @@ module = [
     "agent_framework.*",
     "opik.*",
     "optuna.*",
+    "joblib.*",
+    "feast.*",
 ]
 ignore_missing_imports = true
 

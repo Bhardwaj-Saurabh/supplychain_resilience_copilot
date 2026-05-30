@@ -7,6 +7,7 @@ gate, FastAPI) and serves a genuine ML-driven decision.
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from scrc.app import Settings, build_app
@@ -34,8 +35,11 @@ def test_demo_app_serves_a_real_decision() -> None:
         assert body["review"]["brief"]
 
 
-def test_production_profile_is_explicitly_unwired() -> None:
-    import pytest
+def test_production_profile_requires_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scrc.app.production import ProductionConfigError
 
-    with pytest.raises(NotImplementedError):
+    # Unconfigured environment -> production composition fails loudly, not silently.
+    for name in ("FEAST_REPO_PATH", "SCRC_MODEL_DIR", "CHRONOS_ENDPOINT", "AZURE_OPENAI_ENDPOINT"):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(ProductionConfigError):
         build_app(Settings(profile="production"))
