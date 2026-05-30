@@ -25,6 +25,27 @@ make setup        # create venv + install project and dev tools
 make check        # lint + type + import-boundaries + tests
 ```
 
+### Run the demo
+
+The `demo` profile boots the full decision stack with **no external services** —
+the real XGBoost and Isolation Forest models are trained on synthetic data at
+startup, with a local forecaster and the real regime classifier:
+
+```bash
+uv pip install -e ".[api,orchestration,ml,data]"
+make serve        # uvicorn on :8000  (or: make up  for the Docker stack)
+
+curl -s localhost:8000/health
+curl -s -X POST localhost:8000/decisions \
+  -H 'content-type: application/json' \
+  -d '{"sku_id":"DEMO_SKU","store_id":"CA_1","port_ids":["USLAX"]}'
+```
+
+An escalated (REVIEW/CRITICAL) decision returns `202` with a `ReviewRequest`;
+resolve it via the HITL webhook `POST /decisions/{thread_id}/resume`. The
+`production` profile wires Chronos/Azure/MLflow/Feast (see
+[scrc.app.composition](packages/scrc/app/composition.py)).
+
 Common targets (`make help` for the full list):
 
 | Target | Purpose |

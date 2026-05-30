@@ -105,11 +105,16 @@ services:
     networks: [scrc]
 
   api:
-    # BUILD STUB (Module 3): FastAPI — actions, inference, HITL webhook.
-    image: busybox
-    command: ["sh", "-c", "echo 'fastapi stub'; sleep infinity"]
+    # FastAPI + in-process agent runtime. The `demo` profile (SCRC_PROFILE=demo)
+    # boots with no external services — real XGBoost/IsolationForest trained on
+    # synthetic data at startup. Switch to `production` to wire MLflow/Feast/
+    # Chronos/Azure (see scrc.app.composition.build_production_bundle).
+    build:
+      context: ..
+      dockerfile: deploy/api.Dockerfile
+    environment:
+      SCRC_PROFILE: ${SCRC_PROFILE:-demo}
     ports: ["8000:8000"]
-    depends_on: [agent-runtime]
     networks: [scrc]
 
   # --- Observability -------------------------------------------------------

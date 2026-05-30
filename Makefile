@@ -6,7 +6,7 @@
 SHELL := /bin/bash
 UV := uv
 
-.PHONY: help setup fmt lint type test check lint-imports eval up down data-init clean
+.PHONY: help setup fmt lint type test check lint-imports eval serve up up-api down data-init clean
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -38,11 +38,17 @@ eval: ## Run the routing evaluation as a release gate (ADR-0007)
 
 check: lint type lint-imports test ## Run all quality gates (CI parity)
 
-up: ## Bring up the full stack (Docker Compose)
-	@echo "[stub] docker compose -f deploy/docker-compose.yml up — wired in later phases"
+serve: ## Run the API + agent runtime locally (demo profile, no external services)
+	$(UV) run uvicorn scrc.app.composition:build_app --factory --host 0.0.0.0 --port 8000
+
+up: ## Build + start the stack (Docker Compose)
+	docker compose -f deploy/docker-compose.yml up --build
+
+up-api: ## Build + start just the API service
+	docker compose -f deploy/docker-compose.yml up --build api
 
 down: ## Tear down the stack
-	@echo "[stub] docker compose -f deploy/docker-compose.yml down"
+	docker compose -f deploy/docker-compose.yml down
 
 data-init: ## Initialise data sources / feature store
 	@echo "[stub] data initialisation — implemented in Module 1 (Airflow + Feast)"

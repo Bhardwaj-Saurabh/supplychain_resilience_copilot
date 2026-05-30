@@ -66,7 +66,9 @@ Python 3.11+ with [`uv`](https://docs.astral.sh/uv/). Quality gates (run by `mak
 
 Conventions that matter: contracts are **frozen** Pydantic models with `extra="forbid"`; the `scrc.data.*`/`scrc.ml.*`/`scrc.orchestration.*`/`scrc.observability.*` modules have mypy overrides relaxing only `warn_return_any` for their untyped third-party libs — keep the rest strict.
 
-Still to come (PRD-specified, not yet built): a real composition root + `docker-compose up` for the full service stack (currently a skeleton with infra services real and app/inference services as build stubs — see [deploy/docker-compose.yml](deploy/docker-compose.yml)); `make data-init`; the Monitoring Agent + drift-triggered retraining; and the 4 Grafana dashboards. Optional SDKs (`agent-framework`, `opik`) are documented manual installs, not locked extras.
+Run the app: `make serve` (uvicorn, **demo profile** — boots with no external services, training the real XGBoost/IsolationForest on synthetic data at startup) or `make up` (Docker Compose; the `api` service builds from [deploy/api.Dockerfile](deploy/api.Dockerfile)). The composition root is [scrc.app.composition](packages/scrc/app/composition.py); `build_app` is the uvicorn factory.
+
+Still to come (PRD-specified, not yet built): the **production** composition wiring (Chronos/Azure/MLflow/Feast — adapters exist, `build_production_bundle` raises until assembled), the remaining inference/pipeline Compose services (still build stubs), `make data-init`, the Monitoring Agent + drift-triggered retraining, and the 4 Grafana dashboards. Optional SDKs (`agent-framework`, `opik`) are documented manual installs, not locked extras.
 
 ## Hard constraints (PRD §12 — out of scope for v1)
 

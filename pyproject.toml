@@ -137,6 +137,11 @@ warn_return_any = false
 module = "scrc.observability.*"
 warn_return_any = false
 
+# Composition root trains demo models with numpy/pandas/sklearn.
+[[tool.mypy.overrides]]
+module = "scrc.app.*"
+warn_return_any = false
+
 # Third-party ML/serving libs without bundled type stubs.
 [[tool.mypy.overrides]]
 module = [
